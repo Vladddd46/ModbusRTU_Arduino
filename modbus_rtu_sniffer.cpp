@@ -86,14 +86,14 @@ void modbus_rtu_sniffer_proc() {
     uint16_t reg_value;
     bool err = master_read(reg_addr);
 
-    if (err == 1) {
-        err = slave_read(reg_value);
+    // if (err == 1) {
+        // err = slave_read(reg_value);
         if (err && table.records_quantity < TABLE_MAX_SIZE) {
             table.records_quantity += 1;
             table.record[table.records_quantity].reg_addr = reg_addr;
-        }
+        // }
     }
     
-    delay(1000);
+//    delay(1000);
     print_table();
 }

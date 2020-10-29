@@ -32,6 +32,21 @@ bool master_read(uint16_t &reg_address) {
         return false;
     }
 
+
+    // Chesum calculating
+    // int len = strlen((char *)master_packet);
+    // int sum = master_packet[0];
+    // for (int i = 1; i < len - 2; ++i) {
+    //   sum = sum << 8;
+    //   sum |= master_packet[i];
+    // }
+    // int checksum = master_packet[len - 2];
+    // checksum = checksum << 8;
+    // checksum |= master_packet[len - 1];
+    // if (checksum != sum) {
+    //   return false;
+    // }
+
     uint16_t addr = master_packet[2];
     addr = addr << 8;
     addr |= master_packet[3];
@@ -60,6 +75,20 @@ bool slave_read(uint16_t &reg_value) {
     if (index == 0) {
         return false;
     }
+
+    // Checksum calculating.
+    // int len = strlen((char *)salve_packet);
+    // int sum = salve_packet[0];
+    // for (int i = 1; i < len - 2; ++i) {
+    //   sum = sum << 8;
+    //   sum |= salve_packet[i];
+    // }
+    // int checksum = salve_packet[len - 2];
+    // checksum = checksum << 8;
+    // checksum |= salve_packet[len - 1];
+    // if (checksum != sum) {
+    //   return false;
+    // }
 
     int len = strlen((char *)salve_packet);
     uint16_t value = salve_packet[4]; 

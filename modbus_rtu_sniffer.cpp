@@ -2,6 +2,32 @@
 
 records_t table;
 
+static uint16_t modbus_crc_calculation(uint8_t *buf, uint8_t cNumberByte) {
+  uint16_t iCRC;
+  uint8_t cBitCounter, i = 0;
+  iCRC = 0xFFFF; 
+
+  while (cNumberByte > 0) {
+    iCRC ^= buf[i++] ;
+    cBitCounter = 0; 
+
+    while (cBitCounter < 8) {
+      if (iCRC & 0x0001) {
+        iCRC >>= 1; 
+        iCRC ^= 0xA001;
+      }
+      else {
+        iCRC >>=1;
+      }
+      cBitCounter++;
+    }
+    cNumberByte--;
+  }
+  return (iCRC);
+}
+
+
+
 bool modbus_rtu_sniffer_init() {
   Serial.begin(9600);
   Serial1.begin(9600);
@@ -33,19 +59,15 @@ bool master_read(uint16_t &reg_address) {
     }
 
 
-    // Chesum calculating
-    // int len = strlen((char *)master_packet);
-    // int sum = master_packet[0];
-    // for (int i = 1; i < len - 2; ++i) {
-    //   sum = sum << 8;
-    //   sum |= master_packet[i];
-    // }
-    // int checksum = master_packet[len - 2];
-    // checksum = checksum << 8;
-    // checksum |= master_packet[len - 1];
-    // if (checksum != sum) {
-    //   return false;
-    // }
+    int len = strlen(master_packet);
+    uint16_t checksum = modbus_crc_calculation ((uint8_t *)master_packet, (uint8_t)len);
+    uint8_t arr[2];
+    arr[0] = checksum & 0xff;
+    arr[1] = checksum >> 8;
+    if (arr[0] == checksum[len - 1] || arr[1] == checksum[len - 2]) {
+        return false;
+    }
+
 
     uint16_t addr = master_packet[2];
     addr = addr << 8;
@@ -76,19 +98,16 @@ bool slave_read(uint16_t &reg_value) {
         return false;
     }
 
-    // Checksum calculating.
-    // int len = strlen((char *)salve_packet);
-    // int sum = salve_packet[0];
-    // for (int i = 1; i < len - 2; ++i) {
-    //   sum = sum << 8;
-    //   sum |= salve_packet[i];
-    // }
-    // int checksum = salve_packet[len - 2];
-    // checksum = checksum << 8;
-    // checksum |= salve_packet[len - 1];
-    // if (checksum != sum) {
-    //   return false;
-    // }
+
+    int len = strlen(salve_packet);
+    uint16_t checksum = modbus_crc_calculation ((uint8_t *)salve_packet, (uint8_t)len);
+    uint8_t arr[2];
+    arr[0] = checksum & 0xff;
+    arr[1] = checksum >> 8;
+    if (arr[0] == checksum[len - 1] || arr[1] == checksum[len - 2]) {
+        return false;
+    }
+
 
     int len = strlen((char *)salve_packet);
     uint16_t value = salve_packet[4]; 

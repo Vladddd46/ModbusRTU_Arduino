@@ -13,13 +13,14 @@
 // } table_t;
 
 typedef struct {
-  uint16_t reg_addr;
-  uint16_t reg_value;  
+  	uint16_t reg_addr;
+  	uint16_t reg_value;  
 } record_t;
 
 typedef struct {
-  uint16_t records_quantity;
-  record_t record[TABLE_MAX_SIZE];
+	unsigned long time;
+  	uint16_t records_quantity;
+  	record_t record[TABLE_MAX_SIZE];
 } records_t;
 
 bool modbus_rtu_sniffer_init();

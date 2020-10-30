@@ -1,5 +1,9 @@
 #include "modbus_rtu_sniffer.h"
 
+#define PRESENT_SINGLE_REGISTER_FUNC_CODE    0x06
+#define PRESENT_MULTIPLE_REGISTERS_FUNC_CODE 0x10
+#define READ_HOLDING_REGISTERS_FUNC_CODE     0x03
+
 records_t table;
 
 static uint16_t modbus_crc_calculation(uint8_t *buf, uint8_t cNumberByte) {
@@ -46,21 +50,41 @@ bool master_read(uint16_t &reg_address) {
     uint8_t master_packet[256];
     bzero(master_packet, 256);
 
+    unsigned long time_ms = millis();
+    int num_of_ms = 0;
     int index = 0;
-    while(Serial.available() > 0) {
-        if (index > 255) {
+    while(1) {
+        if (time_ms >= 4) {
             break;
         }
-        master_packet[index] = Serial.read();
-        index += 1;
+
+        if (Serial.available() > 0) {
+            time_ms = millis();
+
+            if (index > 255) {
+                break;
+            }
+            master_packet[index] = Serial.read();
+            index += 1;
+        }
+        else {
+            if (time_ms - millis() >= 1) {
+                num_of_ms += 1;
+            }
+        }
     }
+
+    if (num_of_ms > 1 && num_of_ms < 4) {
+        return false;
+    }
+
     if (index == 0) {
         return false;
     }
 
-
+    // validating checksum
     int len = strlen(master_packet);
-    uint16_t checksum = modbus_crc_calculation ((uint8_t *)master_packet, (uint8_t)len);
+    uint16_t checksum = modbus_crc_calculation((uint8_t *)master_packet, (uint8_t)len);
     uint8_t arr[2];
     arr[0] = checksum & 0xff;
     arr[1] = checksum >> 8;
@@ -68,6 +92,11 @@ bool master_read(uint16_t &reg_address) {
         return false;
     }
 
+    if (master_packet[1]    != PRESENT_SINGLE_REGISTER_FUNC_CODE 
+        && master_packet[1] != PRESENT_MULTIPLE_REGISTERS_FUNC_CODE 
+        && master_packet[1] != READ_HOLDING_REGISTERS_FUNC_CODE) {
+        return false;
+    }
 
     uint16_t addr = master_packet[2];
     addr = addr << 8;
@@ -99,7 +128,8 @@ bool slave_read(uint16_t &reg_value) {
     }
 
 
-    int len = strlen(salve_packet);
+    // validating checksum
+    int len = strlen((char *)salve_packet);
     uint16_t checksum = modbus_crc_calculation ((uint8_t *)salve_packet, (uint8_t)len);
     uint8_t arr[2];
     arr[0] = checksum & 0xff;
@@ -108,8 +138,12 @@ bool slave_read(uint16_t &reg_value) {
         return false;
     }
 
+    if (salve_packet[1]    != PRESENT_SINGLE_REGISTER_FUNC_CODE 
+        && salve_packet[1] != PRESENT_MULTIPLE_REGISTERS_FUNC_CODE 
+        && salve_packet[1] != READ_HOLDING_REGISTERS_FUNC_CODE) {
+        return false;
+    }
 
-    int len = strlen((char *)salve_packet);
     uint16_t value = salve_packet[4]; 
     for (int i = 5; i < len - 2; ++i) {
       value = value << 8;

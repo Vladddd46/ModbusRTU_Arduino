@@ -18,7 +18,6 @@ typedef struct {
 } record_t;
 
 typedef struct {
-	unsigned long time;
   	uint16_t records_quantity;
   	record_t record[TABLE_MAX_SIZE];
 } records_t;
